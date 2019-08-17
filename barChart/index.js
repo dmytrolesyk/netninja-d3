@@ -48,6 +48,8 @@ xAxisGroup
   .attr('transform', 'rotate(-40)')
   .attr('text-anchor', 'end');
 
+const t = d3.transition().duration(600);
+
 const updateBarChart = (data) => {
   y.domain([0, d3.max(data, d => d.orders)]);
   x.domain(data.map(_ => _.name));
@@ -60,19 +62,21 @@ const updateBarChart = (data) => {
 
   rects
     .attr('width', x.bandwidth)
-    .attr('height', d => graphHeight - y(d.orders))
     .attr('fill', 'orange')
-    .attr('y', d => y(d.orders))
-    .attr('x', d => x(d.name));
+    .attr('x', d => x(d.name))
 
   rects
     .enter()
     .append('rect')
-    .attr('width', x.bandwidth)
-    .attr('height', d => graphHeight - y(d.orders))
     .attr('fill', 'orange')
-    .attr('y', d => y(d.orders))
-    .attr('x', d => x(d.name));
+    .attr('x', d => x(d.name))
+    .attr('y', graphHeight)
+    .attr('height', 0)
+    .merge(rects)
+      .transition(t)
+      .attrTween('width', widthTween)
+        .attr('y', d => y(d.orders))
+        .attr('height', d => graphHeight - y(d.orders));
 
   xAxisGroup.call(xAxis);
   yAxisGroup.call(yAxis);
@@ -85,3 +89,8 @@ db
     res.forEach(doc => data.push(doc.data()));
     updateBarChart(data);
   });
+
+const widthTween = (d) => {
+  const i = d3.interpolate(0, x.bandwidth());
+  return t => i(t);
+};
